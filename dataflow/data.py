@@ -40,7 +40,7 @@ class SmartDataFrame(pandas.DataFrame):
         self.model_registry = {}
 
     # Encoding methods
-    def encode_labels(self, features, keep=False):
+    def label_encode(self, features, keep=False):
         """Encode labels with value between 0 and n_classes-1
 
         Args:
@@ -48,35 +48,35 @@ class SmartDataFrame(pandas.DataFrame):
             keep (:obj:`bool`, optional): Whether or not the original features are kept in the processed dataset. Defaults to False.
 
         """
-        def _encode_label_keep(self, feature):
+        def _label_encode_keep(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
                 self.label_encoder_registry[feature] = LabelEncoder()
             self[feature + "_label_encoded"] = self.label_encoder_registry[feature].fit_transform(self[feature])
 
-        def _encode_label(self, feature):
+        def _label_encode(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
                 self.label_encoder_registry[feature] = LabelEncoder()          
-            self.label_encoder_registry[feature] = LabelEncoder()
-            self[feature] = self.label_encoder_registry[feature].fit_transform(self[feature]) 
+            self[feature + "_label_encoded"] = self.label_encoder_registry[feature].fit_transform(self[feature])
+            del self[feature] 
 
         if isinstance(features, (list, tuple)):
             for feature in features:
                 self.label_encoded_features_keep[feature] = keep
                 if keep:
-                    _encode_label_keep(self, feature)
+                    _label_encode_keep(self, feature)
                 else:
-                    _encode_label(self, feature)
+                    _label_encode(self, feature)
         elif isinstance(features, (str, int, float)):
             feature = features
             self.label_encoded_features_keep[feature] = keep
             if keep:
-                _encode_label_keep(self, feature)
+                _label_encode_keep(self, feature)
             else:
-                _encode_label(self, feature)
+                _label_encode(self, feature)
         else:
             raise Exception
 
-    def decode_labels(self, features=None, remove_registry_entry=False):
+    def label_decode(self, features=None, remove_registry_entry=False):
         if not features:
             features = list(self.label_encoded_features_keep.keys())
 
@@ -86,19 +86,100 @@ class SmartDataFrame(pandas.DataFrame):
                 if remove_registry_entry:
                     del self.label_encoded_features_keep[feature]
 
-    def one_hot_encode(self, parameters, keep=False):
-        """Encode categorical integer features using a one-of-K scheme
+    def one_hot_encode(self, features, parameters, keep=False):
+        """Encode categorical features using a one-of-K scheme
         
         Args:
-            parameters (dict): keys are DataFrame feature names and values are parameters for the sklearn OneHotEncoder"""
+            features (list): the list of features to encode.
+            parameters (dict): other parameters to pass to the encoder.
+            keep (:obj:`bool`, optional): Whether or not the original features are kept in the processed dataset. Defaults to False.
+        """
 
-        pass
+        def _one_hot_encode_keep(self, feature):
+            if not hasattr(self, "label_encoder_registry[feature]"):
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+            encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
+            n_values = self.one_hot_encoder_registry[feature].n_values_
+            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            self = pd.concat(self, encoded_feature, axis=1)
+
+        def _one_hot_encode(self, feature):
+            if not hasattr(self, "label_encoder_registry[feature]"):
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+            encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
+            n_values = self.one_hot_encoder_registry[feature].n_values_
+            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            del self[feature]
+            self = pd.concat(self, encoded_feature, axis=1)
+
+        if isinstance(features, (list, tuple)):
+            for feature in features:
+                self.one_hot_encoded_features_keep[feature] = keep
+                if keep:
+                    _one_hot_encode_keep(self, feature)
+                else:
+                    _one_hot_encode(self, feature)
+
+        elif isinstance(features, (str, int, float)):
+            feature = features
+            self.one_hot_encoded_features_keep[feature] = keep
+            if keep:
+                _one_hot_encode_keep(self, feature)
+            else:
+                _one_hot_encode(self, feature)
+        else:
+            raise Exception
+            
+    def one_hot_decode(self, features=None, remove_registry_entry=False):
+        if not features:
+            features = list(self.one_hot_encoded_features_keep.keys())
+
+        for feature in features:
+            if not self.one_hot_encoded_features_keep[feature]:
+                self[feature] = self.one_hot_encoder_registry[feature].inverse_transform(self[feature])
+                if remove_registry_entry:
+                    del self.one_hot_encoded_features_keep[feature]
 
     # Scaling methods
-    def standard_scaling(self, parameters_per_feature, keep=False):
-        """ 
-        parameters_per_feature (dict)"""
-        pass
+    def standard_scaling(self, features, parameters, keep=False):
+        def _one_hot_encode_keep(self, feature):
+            if not hasattr(self, "label_encoder_registry[feature]"):
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+            encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
+            n_values = self.one_hot_encoder_registry[feature].n_values_
+            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            self = pd.concat(self, encoded_feature, axis=1)
+
+        def _one_hot_encode(self, feature):
+            if not hasattr(self, "label_encoder_registry[feature]"):
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+            encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
+            n_values = self.one_hot_encoder_registry[feature].n_values_
+            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            del self[feature]
+            self = pd.concat(self, encoded_feature, axis=1)
+
+        if isinstance(features, (list, tuple)):
+            for feature in features:
+                self.one_hot_encoded_features_keep[feature] = keep
+                if keep:
+                    _one_hot_encode_keep(self, feature)
+                else:
+                    _one_hot_encode(self, feature)
+
+        elif isinstance(features, (str, int, float)):
+            feature = features
+            self.one_hot_encoded_features_keep[feature] = keep
+            if keep:
+                _one_hot_encode_keep(self, feature)
+            else:
+                _one_hot_encode(self, feature)
+        else:
+            raise Exception
 
     # Simplifying methods
     def quantile_transform(self, parameters_per_feature, keep=False):
