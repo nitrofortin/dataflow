@@ -10,6 +10,10 @@ Welcome to dataflow's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. autoclass:: SmartDataFrame
+   :members:
+
+.. automodule:: data
 
 
 Indices and tables
