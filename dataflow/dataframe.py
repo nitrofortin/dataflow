@@ -204,13 +204,23 @@ class SmartDataFrame(pandas.DataFrame):
         
     # Simplifying methods
     def quantile_transform(self, features, keep=False, **sklearn_kwargs):
-        """ 
-        parameters_per_feature (dict)"""
+        """Transform features using quantiles information
+        
+        Args:
+            features: features to binarize.
+            keep (:obj:`bool`, optional): Whether or not the original features are kept in the processed dataset. Defaults to False.
+            sklearn_kwargs (dict): other parameters to pass to scikit-learn QuantileTransformer.
+        """
         pass
 
     def binarize(self, features, keep=False, **sklearn_kwargs):
-        """ 
-        parameters_per_feature (dict)"""
+        """Binarize data (set feature values to 0 or 1) according to a threshold
+        
+        Args:
+            features: features to binarize.
+            keep (:obj:`bool`, optional): Whether or not the original features are kept in the processed dataset. Defaults to False.
+            sklearn_kwargs (dict): other parameters to pass to scikit-learn Binarizer.
+        """
         pass
 
     # Cleaning methods
@@ -342,17 +352,8 @@ class SmartDataFrame(pandas.DataFrame):
     #         raise Exception("Model must be trained")
 
 
-class SmartArray(numpy.array):
-    def __init__(self, data, target=None, dtype=None, copy=True, order='K', subok=False, ndmin=0):
-        """SmartArray Class wraps important scikit-learn data pre-processing methods over numpy.array
 
-        The main idea behind SmartArray is to allow the user to chain common data science logic on top of numpy array.
 
-        Args:
-            args: Arguments passed to a numpy array object.
-            kwargs: Keyword arguments passed to a numpy array object.
-        """
-        super().__init__(data, dtype, copy, order, subok, ndmin) 
 
 
 
