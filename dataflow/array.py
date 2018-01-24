@@ -21,3 +21,20 @@ class SmartArray(numpy.array):
             kwargs: Keyword arguments passed to a numpy array object.
         """
         super().__init__(data, dtype, copy, order, subok, ndmin) 
+        self.target = target
+
+        # Preprocessing attributes
+        self.label_encoder_registry = {}
+        self.one_hot_encoder_registry = {}
+        self.standard_scaler_registry = {}
+        self.quantile_transformer_registry = {}
+        self.binarizer_registry = {}
+
+        self.label_encoded_features_keep = {}
+        self.one_hot_encoded_features_keep = {}
+        self.standard_scaled_features_keep = {}
+        self.quantile_transformed_features_keep = {}
+        self.binarized_features_keep = {}
+
+        # Machine learning attributes
+        self.model_registry = {}

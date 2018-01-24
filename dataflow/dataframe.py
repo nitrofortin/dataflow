@@ -227,15 +227,6 @@ class SmartDataFrame(pandas.DataFrame):
     def remove_outlier(self, threshold):
         pass
 
-    def fill_nan(self, **value_by_features):
-        pass
-
-    def delete_rows(self, callables):
-        if isinstance(callables, callable):
-            pass
-        elif isinstance(callables, (list, tuple)):
-            pass
-
     def type_checking(self, types, rules):
         # given feature types and what to do if type condition not met (rules)
         pass
