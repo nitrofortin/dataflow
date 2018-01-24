@@ -40,7 +40,7 @@ class SmartDataFrame(pandas.DataFrame):
         self.model_registry = {}
 
     # Encoding methods
-    def label_encode(self, features, keep=False):
+    def label_encoded(self, features, keep=False):
         """Encode labels with value between 0 and n_classes-1
 
         Args:
@@ -96,7 +96,7 @@ class SmartDataFrame(pandas.DataFrame):
         """
 
         def _one_hot_encode_keep(self, feature):
-            if not hasattr(self, "label_encoder_registry[feature]"):
+            if not hasattr(self, "one_hot_encoder_registry[feature]"):
                 self.one_hot_encoder_registry[feature] = OneHotEncoder()          
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
@@ -105,7 +105,7 @@ class SmartDataFrame(pandas.DataFrame):
             self = pd.concat(self, encoded_feature, axis=1)
 
         def _one_hot_encode(self, feature):
-            if not hasattr(self, "label_encoder_registry[feature]"):
+            if not hasattr(self, "one_hot_encoder_registry[feature]"):
                 self.one_hot_encoder_registry[feature] = OneHotEncoder()          
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
@@ -143,41 +143,48 @@ class SmartDataFrame(pandas.DataFrame):
                     del self.one_hot_encoded_features_keep[feature]
 
     # Scaling methods
-    def standard_scaling(self, features, parameters, keep=False):
-        def _one_hot_encode_keep(self, feature):
-            if not hasattr(self, "label_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
-            encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
-            n_values = self.one_hot_encoder_registry[feature].n_values_
-            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
+    def standard_scale(self, features, parameters, keep=False):
+        """Standardize features by removing the mean and scaling to unit variance
+        
+        Args:
+            features (list): the list of features to scale.
+            parameters (dict): other parameters to pass to the scaler.
+            keep (:obj:`bool`, optional): Whether or not the original features are kept in the processed dataset. Defaults to False.
+        """
+        def _standard_scaling_keep(self, feature):
+            if not hasattr(self, "standard_scaler_registry[feature]"):
+                self.standard_scaler_registry[feature] = StandardScaler()          
+            encoded_data = self.standard_scaler_registry[feature].fit_transform(self[feature])
+            n_values = self.standard_scaler_registry[feature].n_values_
+            encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) for i in range(n_values)]
             encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
             self = pd.concat(self, encoded_feature, axis=1)
 
-        def _one_hot_encode(self, feature):
-            if not hasattr(self, "label_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
-            encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
-            n_values = self.one_hot_encoder_registry[feature].n_values_
-            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
+        def _standard_scaling(self, feature):
+            if not hasattr(self, "standard_scaler_registry[feature]"):
+                self.one_hot_encoder_registry[feature] = StandardScaler()          
+            encoded_data = self.standard_scaler_registry[feature].fit_transform(self[feature])
+            n_values = self.standard_scaler_registry[feature].n_values_
+            encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) for i in range(n_values)]
             encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
             del self[feature]
             self = pd.concat(self, encoded_feature, axis=1)
 
         if isinstance(features, (list, tuple)):
             for feature in features:
-                self.one_hot_encoded_features_keep[feature] = keep
+                self.standard_scaled_features_keep[feature] = keep
                 if keep:
-                    _one_hot_encode_keep(self, feature)
+                    _standard_scaling_keep(self, feature)
                 else:
-                    _one_hot_encode(self, feature)
+                    _standard_scaling(self, feature)
 
         elif isinstance(features, (str, int, float)):
             feature = features
-            self.one_hot_encoded_features_keep[feature] = keep
+            self.standard_scaled_features_keep[feature] = keep
             if keep:
-                _one_hot_encode_keep(self, feature)
+                _standard_scaling_keep(self, feature)
             else:
-                _one_hot_encode(self, feature)
+                _standard_scaling(self, feature)
         else:
             raise Exception
 
@@ -332,5 +339,7 @@ class SmartArray(numpy.array):
             kwargs: Keyword arguments passed to a numpy array object.
         """
         super().__init__(data, dtype, copy, order, subok, ndmin) 
+
+
 
 
