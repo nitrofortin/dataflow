@@ -40,7 +40,7 @@ class SmartDataFrame(pandas.DataFrame):
         self.model_registry = {}
 
     # Encoding methods
-    def label_encoded(self, features, keep=False):
+    def label_encoded(self, features, keep=False, **sklearn_kwargs):
         """Encode labels with value between 0 and n_classes-1
 
         Args:
@@ -50,12 +50,12 @@ class SmartDataFrame(pandas.DataFrame):
         """
         def _label_encode_keep(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
-                self.label_encoder_registry[feature] = LabelEncoder()
+                self.label_encoder_registry[feature] = LabelEncoder(**sklearn_kwargs)
             self[feature + "_label_encoded"] = self.label_encoder_registry[feature].fit_transform(self[feature])
 
         def _label_encode(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
-                self.label_encoder_registry[feature] = LabelEncoder()          
+                self.label_encoder_registry[feature] = LabelEncoder(**sklearn_kwargs)          
             self[feature + "_label_encoded"] = self.label_encoder_registry[feature].fit_transform(self[feature])
             del self[feature] 
 
@@ -86,18 +86,19 @@ class SmartDataFrame(pandas.DataFrame):
                 if remove_registry_entry:
                     del self.label_encoded_features_keep[feature]
 
-    def one_hot_encode(self, features, parameters, keep=False):
+    def one_hot_encode(self, features, parameters, keep=False, **sklearn_kwargs):
         """Encode categorical features using a one-of-K scheme
         
         Args:
-            features (list): the list of features to encode.
-            parameters (dict): other parameters to pass to the encoder.
+            features: features to one-hot encode.
             keep (:obj:`bool`, optional): Whether or not the original features are kept in the processed dataset. Defaults to False.
+            sklearn_kwargs (dict): other parameters to pass to scikit-learn OneHotEncoder.
         """
 
         def _one_hot_encode_keep(self, feature):
             if not hasattr(self, "one_hot_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+                self.one_hot_encoder_registry[feature] = OneHotEncoder(**sklearn_kwargs)      
+
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
@@ -106,7 +107,8 @@ class SmartDataFrame(pandas.DataFrame):
 
         def _one_hot_encode(self, feature):
             if not hasattr(self, "one_hot_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+                self.one_hot_encoder_registry[feature] = OneHotEncoder(**sklearn_kwargs)         
+
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
@@ -143,17 +145,18 @@ class SmartDataFrame(pandas.DataFrame):
                     del self.one_hot_encoded_features_keep[feature]
 
     # Scaling methods
-    def standard_scale(self, features, parameters, keep=False):
+    def standard_scale(self, features, keep=False, **sklearn_kwargs):
         """Standardize features by removing the mean and scaling to unit variance
         
         Args:
-            features (list): the list of features to scale.
-            parameters (dict): other parameters to pass to the scaler.
+            features: features to scale.
             keep (:obj:`bool`, optional): Whether or not the original features are kept in the processed dataset. Defaults to False.
+            sklearn_kwargs (dict): other parameters to pass to scikit-learn StandardScaler.
         """
         def _standard_scaling_keep(self, feature):
             if not hasattr(self, "standard_scaler_registry[feature]"):
-                self.standard_scaler_registry[feature] = StandardScaler()          
+                self.standard_scaler_registry[feature] = StandardScaler(**sklearn_kwargs)    
+
             encoded_data = self.standard_scaler_registry[feature].fit_transform(self[feature])
             n_values = self.standard_scaler_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) for i in range(n_values)]
@@ -162,7 +165,8 @@ class SmartDataFrame(pandas.DataFrame):
 
         def _standard_scaling(self, feature):
             if not hasattr(self, "standard_scaler_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = StandardScaler()          
+                self.one_hot_encoder_registry[feature] = StandardScaler(**sklearn_kwargs) 
+
             encoded_data = self.standard_scaler_registry[feature].fit_transform(self[feature])
             n_values = self.standard_scaler_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) for i in range(n_values)]
@@ -188,13 +192,23 @@ class SmartDataFrame(pandas.DataFrame):
         else:
             raise Exception
 
+    def standard_unscale(self, features=None, remove_registry_entry=False):
+        if not features:
+            features = list(self.standard_scaled_features_keep.keys())
+
+        for feature in features:
+            if not self.standard_scaled_features_keep[feature]:
+                self[feature] = self.standard_scaler_registry[feature].inverse_transform(self[feature])
+                if remove_registry_entry:
+                    del self.standard_scaled_features_keep[feature]
+        
     # Simplifying methods
-    def quantile_transform(self, parameters_per_feature, keep=False):
+    def quantile_transform(self, features, keep=False, **sklearn_kwargs):
         """ 
         parameters_per_feature (dict)"""
         pass
 
-    def binarize(self, parameters_per_feature, keep=False):
+    def binarize(self, features, keep=False, **sklearn_kwargs):
         """ 
         parameters_per_feature (dict)"""
         pass
