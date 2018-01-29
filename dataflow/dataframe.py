@@ -127,11 +127,9 @@ class SmartDataFrame(pandas.DataFrame):
 
             encoded_data = self.one_hot_encoder_registry[feature] \
                                .fit_transform(self[feature])
-
             n_values = self.one_hot_encoder_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) 
                                        for i in range(n_values)]
-
             encoded_feature = pd.DataFrame(encoded_data, 
                                            columns=encoded_feature_columns) 
             del self[feature]
@@ -184,15 +182,11 @@ class SmartDataFrame(pandas.DataFrame):
 
             encoded_data = self.standard_scaler_registry[feature] \
                                .fit_transform(self[feature])
-
             n_values = self.standard_scaler_registry[feature].n_values_
-
             encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) 
                                        for i in range(n_values)]
-
             encoded_feature = pd.DataFrame(encoded_data, 
                                            columns=encoded_feature_columns)
-
             self = pd.concat(self, encoded_feature, axis=1)
 
         def _standard_scaling(self, feature):
@@ -201,12 +195,9 @@ class SmartDataFrame(pandas.DataFrame):
 
             encoded_data = self.standard_scaler_registry[feature] \
                                .fit_transform(self[feature])
-
             n_values = self.standard_scaler_registry[feature].n_values_
-
             encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) 
                                        for i in range(n_values)]
-
             encoded_feature = pd.DataFrame(encoded_data, 
                                            columns=encoded_feature_columns) 
             del self[feature]
@@ -299,7 +290,7 @@ class SmartDataFrame(pandas.DataFrame):
             model (scikit-learn model object): (e.g. sklearn.tree.DecisionTreeRegressor())
             target ((:obj:`str`, :obj:`numpy.array`, :obj:`pandas.DataFrame), optional):  
         """
-        
+
         if target:
             if isinstance(target, str):
                 if target in self.columns:
