@@ -14,7 +14,8 @@ import inspect
 class SmartDataFrame(pandas.DataFrame):
     def __init__(self, data=None, target=None, index=None, columns=None, 
                  dtype=None, copy=False):
-        """SmartDataFrame Class wraps important scikit-learn data pre-processing 
+        """
+        SmartDataFrame Class wraps important scikit-learn data pre-processing 
         methods over pandas.DataFrame
 
         The main idea behind SmartDataFrame is to allow the user to chain common 
