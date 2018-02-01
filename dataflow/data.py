@@ -14,13 +14,14 @@ class SmartDataFrame(pandas.DataFrame):
     def __init__(self, data=None, target=None, index=None, columns=None, dtype=None, copy=False):
         """SmartDataFrame Class wraps important scikit-learn data pre-processing methods over pandas.DataFrame
 
-        The main idea behind SmartDataFrame is to allow the user to chain common data science logic on top of pandas DataFrame.
+        The main idea behind SmartDataFrame is to allow the user to chain 
+        common data science logic on top of pandas DataFrame.
 
         Args:
             args: Arguments passed to a pandas.DataFrame object.
             kwargs: Keyword arguments passed to a pandas.DataFrame object.
         """
-        super().__init__(data, index, columns, dtype, copy) 
+        super().__init__(data, index, columns, dtype, copy)
         self.target = target
 
         # Preprocessing attributes
@@ -55,9 +56,9 @@ class SmartDataFrame(pandas.DataFrame):
 
         def _label_encode(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
-                self.label_encoder_registry[feature] = LabelEncoder()          
+                self.label_encoder_registry[feature] = LabelEncoder()
             self[feature + "_label_encoded"] = self.label_encoder_registry[feature].fit_transform(self[feature])
-            del self[feature] 
+            del self[feature]
 
         if isinstance(features, (list, tuple)):
             for feature in features:
@@ -88,7 +89,7 @@ class SmartDataFrame(pandas.DataFrame):
 
     def one_hot_encode(self, features, parameters, keep=False):
         """Encode categorical features using a one-of-K scheme
-        
+
         Args:
             features (list): the list of features to encode.
             parameters (dict): other parameters to pass to the encoder.
@@ -97,20 +98,20 @@ class SmartDataFrame(pandas.DataFrame):
 
         def _one_hot_encode_keep(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns)
             self = pd.concat(self, encoded_feature, axis=1)
 
         def _one_hot_encode(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns)
             del self[feature]
             self = pd.concat(self, encoded_feature, axis=1)
 
@@ -131,7 +132,7 @@ class SmartDataFrame(pandas.DataFrame):
                 _one_hot_encode(self, feature)
         else:
             raise Exception
-            
+
     def one_hot_decode(self, features=None, remove_registry_entry=False):
         if not features:
             features = list(self.one_hot_encoded_features_keep.keys())
@@ -146,20 +147,20 @@ class SmartDataFrame(pandas.DataFrame):
     def standard_scaling(self, features, parameters, keep=False):
         def _one_hot_encode_keep(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns)
             self = pd.concat(self, encoded_feature, axis=1)
 
         def _one_hot_encode(self, feature):
             if not hasattr(self, "label_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder()          
+                self.one_hot_encoder_registry[feature] = OneHotEncoder()
             encoded_data = self.one_hot_encoder_registry[feature].fit_transform(self[feature])
             n_values = self.one_hot_encoder_registry[feature].n_values_
             encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns) 
+            encoded_feature = pd.DataFrame(encoded_data, columns=encoded_feature_columns)
             del self[feature]
             self = pd.concat(self, encoded_feature, axis=1)
 
@@ -183,12 +184,12 @@ class SmartDataFrame(pandas.DataFrame):
 
     # Simplifying methods
     def quantile_transform(self, parameters_per_feature, keep=False):
-        """ 
+        """
         parameters_per_feature (dict)"""
         pass
 
     def binarize(self, parameters_per_feature, keep=False):
-        """ 
+        """
         parameters_per_feature (dict)"""
         pass
 
@@ -212,7 +213,7 @@ class SmartDataFrame(pandas.DataFrame):
     def drop_features(self, features, inplace=False):
         """
         Args:
-            inplace (bool): if True, drop features inplace and return self. 
+            inplace (bool): if True, drop features inplace and return self.
         """
         if inplace:
             self = self.drop(features, axis=1)
@@ -229,7 +230,7 @@ class SmartDataFrame(pandas.DataFrame):
         """
         Args:
             model (scikit-learn model object): (e.g. sklearn.tree.DecisionTreeRegressor())
-            target ((:obj:`str`, :obj:`numpy.array`, :obj:`pandas.DataFrame), optional):  
+            target ((:obj:`str`, :obj:`numpy.array`, :obj:`pandas.DataFrame), optional):
         """
         if target:
             if isinstance(target, str):
@@ -273,7 +274,7 @@ class SmartDataFrame(pandas.DataFrame):
         # If the model is unsupervised
         elif number_of_mandatory_arguments is 1:
             self.model_registry[model_hash]['model'].fit(self)
-        
+
         else:
             raise Exception("Unknown number of mandatory arguments")
 
@@ -305,19 +306,19 @@ class SmartDataFrame(pandas.DataFrame):
     # def predict(self, model, data)
     #     try:
     #         return model.predict(data)
-    #     except:   
+    #     except:
     #         raise Exception("Model must be trained")
-        
+
     # def predict_log_proba(self, model, data)
     #     try:
     #         return model.predict_log_proba(data)
-    #     except:   
+    #     except:
     #         raise Exception("Model must be trained")
 
     # def predict_proba(self, model, data)
     #     try:
     #         return model.predict_proba(data)
-    #     except:   
+    #     except:
     #         raise Exception("Model must be trained")
 
 
@@ -331,6 +332,4 @@ class SmartArray(numpy.array):
             args: Arguments passed to a numpy array object.
             kwargs: Keyword arguments passed to a numpy array object.
         """
-        super().__init__(data, dtype, copy, order, subok, ndmin) 
-
-
+        super().__init__(data, dtype, copy, order, subok, ndmin)
