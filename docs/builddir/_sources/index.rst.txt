@@ -3,11 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-
-.. this  test        :members:
-
-.. test automodule:: data
-
 Welcome to dataflow's documentation!
 ====================================
 
@@ -15,12 +10,7 @@ Welcome to dataflow's documentation!
    :maxdepth: 2
 
    intro
-
-.. autoclass:: SmartDataFrame
-
-
-
-
+   dataflow
 
 Indices and tables
 ==================
