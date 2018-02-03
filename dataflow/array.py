@@ -2,7 +2,7 @@
 This file contains the main data structures of dataflow
 """
 
-from sklearn.preprocessing import (LabelEncoder, OneHotEncoder, StandardScaler, 
+from sklearn.preprocessing import (LabelEncoder, OneHotEncoder, StandardScaler,
                                    QuantileTransformer, Binarizer)
 from sklearn.model_selection import train_test_split as train_test_split_sklearn
 
@@ -23,7 +23,7 @@ class SmartArray(numpy.ndarray):
             args: Arguments passed to a numpy array object.
             kwargs: Keyword arguments passed to a numpy array object.
         """
-        super().__init__(data, dtype, copy, order, subok, ndmin) 
+        super().__init__(data, dtype, copy, order, subok, ndmin)
         self.target = target
 
         # Preprocessing attributes
