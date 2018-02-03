@@ -9,8 +9,7 @@ Welcome to dataflow's documentation!
 .. toctree::
    :maxdepth: 2
 
-   intro
-   dataflow
+   smart_dataframe
 
 Indices and tables
 ==================
