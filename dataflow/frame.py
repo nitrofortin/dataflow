@@ -11,6 +11,8 @@ import numpy
 
 import inspect
 
+from builtins import *
+
 class SmartDataFrame(pandas.DataFrame):
     def __init__(self, data=None, target=None, index=None, columns=None, 
                  dtype=None, copy=False):
@@ -45,8 +47,12 @@ class SmartDataFrame(pandas.DataFrame):
         # Machine learning attributes
         self.model_registry = {}
 
+    @property
+    def _constructor(self):
+        return SmartDataFrame
+        
     # Encoding methods
-    def label_encoded(self, features, keep=False, **sklearn_kwargs):
+    def label_encode(self, features, keep=False, **sklearn_kwargs):
         """Encode labels with value between 0 and n_classes-1
 
         Args:
@@ -77,15 +83,13 @@ class SmartDataFrame(pandas.DataFrame):
                     _label_encode_keep(self, feature)
                 else:
                     _label_encode(self, feature)
-        elif isinstance(features, (str, int, float)):
+        else:
             feature = features
             self.label_encoded_features_keep[feature] = keep
             if keep:
                 _label_encode_keep(self, feature)
             else:
                 _label_encode(self, feature)
-        else:
-            raise Exception
 
     def label_decode(self, features=None, remove_registry_entry=False):
         if not features:
