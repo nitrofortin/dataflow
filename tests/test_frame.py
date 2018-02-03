@@ -22,14 +22,21 @@ def pytest_generate_tests(metafunc):
     metafunc.parametrize(argnames, [[funcargs[name] for name in argnames]
             for funcargs in funcarglist])
 
-class TestSuiteFrame(object):
+class TestUnitFrame(object):
     params = {
         'test_label_encode': [dict(features=i, keep=j) for i in ['label_1', \
-                              ['label_1', 'label_2']] for j in [False,True]]
-
+                              ['label_1', 'label_2']] for j in [False,True]], 
+        'test_label_decode': [dict(features=i, keep=j) for i in \
+                              ['label_1_label_encoded', None] for j in \
+                              [False, True]]
     }
 
     def test_label_encode(self, data, features, keep):
-        data.label_encode(features=features, keep=keep)
+        data.label_encode(features=features, keep_original=keep)
 
-    
+    def test_label_decode(self, data, features, keep):
+        data.label_encode(features='label_1', inplace=True)
+        data.label_decode(features=features, keep_original=keep)
+
+class TestFunctionalFrame(object):
+    pass
