@@ -55,8 +55,10 @@ class SmartDataFrame(pandas.DataFrame):
     def copy(self, deep=True):
         results = self
         if deep:
-            results = copy.deepcopy(self)
-            results.__dict__ = self.__dict__
+            results = self._constructor(copy.deepcopy(self._data))
+            for k, v in self.__dict__.items():
+                if k != '_data':
+                    results.__dict__[k] = v
         return results
 
     # Encoding methods
@@ -88,11 +90,12 @@ class SmartDataFrame(pandas.DataFrame):
 
             else:
                 results = self.copy()
+                self.label_encoder_registry[code_name].fit(self[feature])
                 results[code_name] = self.label_encoder_registry[code_name] \
-                                         .fit_transform(results[feature])
+                                         .transform(results[feature])
                 if not keep_original:
                     del results[feature]
-                return results 
+                return  results
 
     def label_decode(self, features=None, keep_original=True, inplace=False):
         if not features:
