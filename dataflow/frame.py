@@ -55,6 +55,7 @@ class SmartDataFrame(pandas.DataFrame):
     def copy(self, deep=True):
         results = self
         if deep:
+            # results = self.copy()
             results = self._constructor(copy.deepcopy(self._data))
             for k, v in self.__dict__.items():
                 if k != '_data':
@@ -62,7 +63,7 @@ class SmartDataFrame(pandas.DataFrame):
         return results
 
     # Encoding methods
-    def label_encode(self, features, keep_original=True, inplace=False, 
+    def encode_label(self, features, keep_original=True, inplace=False, 
                      **sklearn_kwargs):
         """Encode labels with value between 0 and n_classes-1
 
@@ -73,48 +74,45 @@ class SmartDataFrame(pandas.DataFrame):
             sklearn_kwargs (dict): other parameters to pass to scikit-learn 
                 LabelEncoder.
         """
+        result = self if inplace else self.copy()
 
         if not isinstance(features, (list, tuple)):
             features = [features]
 
         for feature in features:
             code_name = "{}_label_encoded".format(feature) 
-            self.label_encoded_features_keep[code_name] = keep_original
-            self.label_encoder_registry[code_name] = LabelEncoder(**sklearn_kwargs)
-            if inplace:         
-                self[code_name] = self.label_encoder_registry[code_name] \
-                                      .fit_transform(self[feature])
-                if not keep_original:
-                    del self[feature] 
-                return self
+            result.label_encoded_features_keep[code_name] = keep_original
+            result.label_encoder_registry[code_name] = LabelEncoder(**sklearn_kwargs)
 
-            else:
-                results = self.copy()
-                self.label_encoder_registry[code_name].fit(self[feature])
-                results[code_name] = self.label_encoder_registry[code_name] \
-                                         .transform(results[feature])
-                if not keep_original:
-                    del results[feature]
-                return  results
+            result[code_name] = result.label_encoder_registry[code_name] \
+                                  .fit_transform(result[feature])
+            if not keep_original:
+                del result[feature]
 
-    def label_decode(self, features=None, keep_original=True, inplace=False):
+        return result
+
+
+    def decode_label(self, features=None, keep_original=True, inplace=False):
         if not features:
             features = list(self.label_encoded_features_keep.keys())
+
+        result = self if inplace else self.copy()
 
         if not isinstance(features, (list, tuple)):
             features = [features]
 
         for feature in features:
-            if feature in self.label_encoder_registry.keys():
-                self[feature.split('_label_encoded')[0]] = self \
+            if feature in result.label_encoder_registry.keys():
+                result[feature.split('_label_encoded')[0]] = result \
                         .label_encoder_registry[feature] \
-                        .inverse_transform(self[feature])
+                        .inverse_transform(result[feature])
                 if not keep_original:
-                    del self[feature]
-                return self
+                    del result[feature]
+                
             else:
                 raise Exception('Cannot decode feature {}, try among {}' 
                         .format(feature, self.label_encoder_registry.keys()))
+        return result
 
     def one_hot_encode(self, features, parameters, keep=False, **sklearn_kwargs):
         """Encode categorical features using a one-of-K scheme
