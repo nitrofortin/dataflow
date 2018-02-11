@@ -9,10 +9,28 @@ from sklearn.model_selection import train_test_split as train_test_split_sklearn
 import pandas
 import numpy
 import copy 
+import functools
+import collections 
 
 import inspect
 
 from builtins import *
+
+sklearn_prep_map = {
+    'label_encode': LabelEncoder,
+    'one_hot_encode': OneHotEncoder,
+    'standard_scale': StandardScaler,
+    'quantile_transform': QuantileTransformer,
+    'binarize': Binarizer
+}
+
+sklearn_pre_undo_map = {
+    'label_decode': 'label_encode',
+    'one_hot_decode': 'one_hot_encode',
+    'standard_unscale': 'standard_scale',
+    'quantile_untransform': 'quantile_transform',
+    'unbinarize': 'binarize'
+}
 
 class SmartDataFrame(pandas.DataFrame):
     def __init__(self, data=None, target=None, index=None, columns=None, 
@@ -33,17 +51,8 @@ class SmartDataFrame(pandas.DataFrame):
         self.target = target
 
         # Preprocessing attributes
-        self.label_encoder_registry = {}
-        self.one_hot_encoder_registry = {}
-        self.standard_scaler_registry = {}
-        self.quantile_transformer_registry = {}
-        self.binarizer_registry = {}
-
-        self.label_encoded_features_keep = {}
-        self.one_hot_encoded_features_keep = {}
-        self.standard_scaled_features_keep = {}
-        self.quantile_transformed_features_keep = {}
-        self.binarized_features_keep = {}
+        self.registry = collections.defaultdict()
+        self.features_keep = collections.defaultdict()
 
         # Machine learning attributes
         self.model_registry = {}
@@ -52,7 +61,7 @@ class SmartDataFrame(pandas.DataFrame):
     def _constructor(self):
         return SmartDataFrame
 
-    def copy(self, deep=True):
+    def _copy(self, deep=True):
         results = self
         if deep:
             # results = self.copy()
@@ -62,8 +71,65 @@ class SmartDataFrame(pandas.DataFrame):
                     results.__dict__[k] = v
         return results
 
+    def sklearn_preprocessing(f):
+        @functools.wraps(f)
+        def __method(self, features, keep_original=True, inplace=False, 
+                         **sklearn_kwargs):
+            method_name = f.__name__
+            result = self if inplace else self._copy()
+
+            if method_name not in result.features_keep:
+                result.features_keep[method_name] = {}
+                result.registry[method_name] = {}
+
+            if not isinstance(features, (list, tuple)):
+                features = [features]
+
+            for feature in features:
+                code_name = "{}_{}".format(feature, method_name) 
+                result.features_keep[method_name][feature] = keep_original
+                result.registry[method_name][feature] = sklearn_prep_map[method_name](**sklearn_kwargs)
+
+                result.__setitem__(code_name, result.registry[method_name][feature] \
+                                        .fit_transform(result[feature]))
+                if not keep_original:
+                    del result[feature]
+            if not inplace:
+                return result
+        return __method
+
+    def sklearn_preprocessing_undo(f):
+        @functools.wraps(f)
+        def __method(self, features, keep_original=True, inplace=False, 
+                         **sklearn_kwargs):
+            method_name = sklearn_pre_undo_map[f.__name__]
+            result = self if inplace else self._copy()
+            
+            if not features:
+                features = list(self.features_keep[method_name].keys())
+
+            if not isinstance(features, (list, tuple)):
+                features = [features]
+
+            for feature in features:
+                code_name = feature.split('_label_encode')[0]
+                if code_name in result.registry[method_name].keys():
+
+                    result.__setitem__(code_name, result \
+                            .registry[method_name][code_name] \
+                            .inverse_transform(result[feature]))
+                    if not keep_original:
+                        del result[feature]
+                    
+                else:
+                    raise Exception('Cannot decode feature {}, try among {}' 
+                            .format(feature, self.registry[method_name][code_name].keys()))
+            return result
+        return __method
+
     # Encoding methods
-    def encode_label(self, features, keep_original=True, inplace=False, 
+    @sklearn_preprocessing
+    def label_encode(self, features, keep_original=True, inplace=False, 
                      **sklearn_kwargs):
         """Encode labels with value between 0 and n_classes-1
 
@@ -74,47 +140,15 @@ class SmartDataFrame(pandas.DataFrame):
             sklearn_kwargs (dict): other parameters to pass to scikit-learn 
                 LabelEncoder.
         """
-        result = self if inplace else self.copy()
+        pass
 
-        if not isinstance(features, (list, tuple)):
-            features = [features]
+    @sklearn_preprocessing_undo
+    def label_decode(self, features=None, keep_original=True, inplace=False):
+        pass
 
-        for feature in features:
-            code_name = "{}_label_encoded".format(feature) 
-            result.label_encoded_features_keep[code_name] = keep_original
-            result.label_encoder_registry[code_name] = LabelEncoder(**sklearn_kwargs)
-
-            result[code_name] = result.label_encoder_registry[code_name] \
-                                  .fit_transform(result[feature])
-            if not keep_original:
-                del result[feature]
-
-        return result
-
-
-    def decode_label(self, features=None, keep_original=True, inplace=False):
-        if not features:
-            features = list(self.label_encoded_features_keep.keys())
-
-        result = self if inplace else self.copy()
-
-        if not isinstance(features, (list, tuple)):
-            features = [features]
-
-        for feature in features:
-            if feature in result.label_encoder_registry.keys():
-                result[feature.split('_label_encoded')[0]] = result \
-                        .label_encoder_registry[feature] \
-                        .inverse_transform(result[feature])
-                if not keep_original:
-                    del result[feature]
-                
-            else:
-                raise Exception('Cannot decode feature {}, try among {}' 
-                        .format(feature, self.label_encoder_registry.keys()))
-        return result
-
-    def one_hot_encode(self, features, parameters, keep=False, **sklearn_kwargs):
+    @sklearn_preprocessing
+    def one_hot_encode(self, features, keep_original=True, inplace=False, 
+                     **sklearn_kwargs):
         """Encode categorical features using a one-of-K scheme
         
         Args:
@@ -124,65 +158,16 @@ class SmartDataFrame(pandas.DataFrame):
             sklearn_kwargs (dict): other parameters to pass to scikit-learn 
                 OneHotEncoder.
         """
-
-        def _one_hot_encode_keep(self, feature):
-            if not hasattr(self, "one_hot_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder(**sklearn_kwargs)      
-
-            encoded_data = self.one_hot_encoder_registry[feature] \
-                               .fit_transform(self[feature])
-            n_values = self.one_hot_encoder_registry[feature].n_values_
-            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) 
-                                       for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, 
-                                           columns=encoded_feature_columns) 
-            self = pd.concat(self, encoded_feature, axis=1)
-
-        def _one_hot_encode(self, feature):
-            if not hasattr(self, "one_hot_encoder_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = OneHotEncoder(**sklearn_kwargs)         
-
-            encoded_data = self.one_hot_encoder_registry[feature] \
-                               .fit_transform(self[feature])
-            n_values = self.one_hot_encoder_registry[feature].n_values_
-            encoded_feature_columns = ["{}_{}_one_hot_encoded".format(feature, i) 
-                                       for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, 
-                                           columns=encoded_feature_columns) 
-            del self[feature]
-            self = pd.concat(self, encoded_feature, axis=1)
-
-        if isinstance(features, (list, tuple)):
-            for feature in features:
-                self.one_hot_encoded_features_keep[feature] = keep
-                if keep:
-                    _one_hot_encode_keep(self, feature)
-                else:
-                    _one_hot_encode(self, feature)
-
-        elif isinstance(features, (str, int, float)):
-            feature = features
-            self.one_hot_encoded_features_keep[feature] = keep
-            if keep:
-                _one_hot_encode_keep(self, feature)
-            else:
-                _one_hot_encode(self, feature)
-        else:
-            raise Exception
+        pass
             
-    def one_hot_decode(self, features=None, remove_registry_entry=False):
-        if not features:
-            features = list(self.one_hot_encoded_features_keep.keys())
-
-        for feature in features:
-            if not self.one_hot_encoded_features_keep[feature]:
-                self[feature] = self.one_hot_encoder_registry[feature] \
-                                    .inverse_transform(self[feature])
-                if remove_registry_entry:
-                    del self.one_hot_encoded_features_keep[feature]
+    @sklearn_preprocessing_undo
+    def one_hot_decode(self, features=None, keep_original=True, inplace=False):
+        pass
 
     # Scaling methods
-    def standard_scale(self, features, keep=False, **sklearn_kwargs):
+    @sklearn_preprocessing
+    def standard_scale(self, features, keep_original=True, inplace=False, 
+                     **sklearn_kwargs):
         """Standardize features by removing the mean and scaling to unit variance
         
         Args:
@@ -192,65 +177,16 @@ class SmartDataFrame(pandas.DataFrame):
             sklearn_kwargs (dict): other parameters to pass to scikit-learn 
                 StandardScaler.
         """
+        pass
 
-        def _standard_scaling_keep(self, feature):
-            if not hasattr(self, "standard_scaler_registry[feature]"):
-                self.standard_scaler_registry[feature] = StandardScaler(**sklearn_kwargs)    
-
-            encoded_data = self.standard_scaler_registry[feature] \
-                               .fit_transform(self[feature])
-            n_values = self.standard_scaler_registry[feature].n_values_
-            encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) 
-                                       for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, 
-                                           columns=encoded_feature_columns)
-            self = pd.concat(self, encoded_feature, axis=1)
-
-        def _standard_scaling(self, feature):
-            if not hasattr(self, "standard_scaler_registry[feature]"):
-                self.one_hot_encoder_registry[feature] = StandardScaler(**sklearn_kwargs) 
-
-            encoded_data = self.standard_scaler_registry[feature] \
-                               .fit_transform(self[feature])
-            n_values = self.standard_scaler_registry[feature].n_values_
-            encoded_feature_columns = ["{}_{}_standard_scaled".format(feature, i) 
-                                       for i in range(n_values)]
-            encoded_feature = pd.DataFrame(encoded_data, 
-                                           columns=encoded_feature_columns) 
-            del self[feature]
-            self = pd.concat(self, encoded_feature, axis=1)
-
-        if isinstance(features, (list, tuple)):
-            for feature in features:
-                self.standard_scaled_features_keep[feature] = keep
-                if keep:
-                    _standard_scaling_keep(self, feature)
-                else:
-                    _standard_scaling(self, feature)
-
-        elif isinstance(features, (str, int, float)):
-            feature = features
-            self.standard_scaled_features_keep[feature] = keep
-            if keep:
-                _standard_scaling_keep(self, feature)
-            else:
-                _standard_scaling(self, feature)
-        else:
-            raise Exception
-
-    def standard_unscale(self, features=None, remove_registry_entry=False):
-        if not features:
-            features = list(self.standard_scaled_features_keep.keys())
-
-        for feature in features:
-            if not self.standard_scaled_features_keep[feature]:
-                self[feature] = self.standard_scaler_registry[feature] \
-                                    .inverse_transform(self[feature])
-                if remove_registry_entry:
-                    del self.standard_scaled_features_keep[feature]
+    @sklearn_preprocessing_undo
+    def standard_unscale(self, features=None, keep_original=True, inplace=False):
+        pass
         
     # Simplifying methods
-    def quantile_transform(self, features, keep=False, **sklearn_kwargs):
+    @sklearn_preprocessing
+    def quantile_transform(self, features, keep_original=True, inplace=False, 
+                     **sklearn_kwargs):
         """Transform features using quantiles information
         
         Args:
@@ -260,10 +196,15 @@ class SmartDataFrame(pandas.DataFrame):
             sklearn_kwargs (dict): other parameters to pass to scikit-learn 
                 QuantileTransformer.
         """
-
         pass
 
-    def binarize(self, features, keep=False, **sklearn_kwargs):
+    @sklearn_preprocessing_undo
+    def quantile_untransform(self, features=None, keep_original=True, inplace=False):
+        pass
+
+    @sklearn_preprocessing
+    def binarize(self, features, keep_original=True, inplace=False, 
+                     **sklearn_kwargs):
         """Binarize data (set feature values to 0 or 1) according to a threshold
         
         Args:
@@ -273,7 +214,10 @@ class SmartDataFrame(pandas.DataFrame):
             sklearn_kwargs (dict): other parameters to pass to scikit-learn 
                 Binarizer.
         """
+        pass
 
+    @sklearn_preprocessing_undo
+    def unbinarize(self, features=None, keep_original=True, inplace=False):
         pass
 
     # Cleaning methods
@@ -398,10 +342,6 @@ class SmartDataFrame(pandas.DataFrame):
     #         return model.predict_proba(data)
     #     except:   
     #         raise Exception("Model must be trained")
-
-
-
-
 
 
 
