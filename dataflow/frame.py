@@ -13,8 +13,9 @@ import functools
 import collections 
 
 import inspect
-
 from builtins import *
+
+from .series import SmartSeries
 
 sklearn_prep_map = {
     'label_encode': LabelEncoder,
@@ -60,6 +61,10 @@ class SmartDataFrame(pandas.DataFrame):
     @property
     def _constructor(self):
         return SmartDataFrame
+
+    @property
+    def _constructor_sliced(self):
+        return SmartSeries
 
     def _copy(self, deep=True):
         results = self
