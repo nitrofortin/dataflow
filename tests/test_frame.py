@@ -34,7 +34,9 @@ class TestUnitFrame(object):
 
         'test_decode_label': [dict(features=i, keep=j) for i in \
                               ['label_1_label_encode', None] for j in \
-                              [False, True]]
+                              [False, True]],
+        'test_instance_type': [{}],
+        'test_slicing_type': [{}]
     }
 
     def test_encode_label(self, data, features, keep, inplace):
@@ -66,3 +68,12 @@ class TestUnitFrame(object):
         assert 'label_1_label_encode' not in res.columns
         assert 'label_2_label_encode' not in res.columns
 
+    def test_instance_type(self, data):
+        assert type(data) is SmartDataFrame
+
+    def test_slicing_type(self, data):
+        assert type(data['label_1']) is pd.Series
+
+
+class TestUnitSeries(object):
+    pass

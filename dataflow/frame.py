@@ -1,6 +1,7 @@
 """
 This file contains the main data structure of dataflow
 """
+from __future__ import absolute_import
 
 from sklearn.preprocessing import (LabelEncoder, OneHotEncoder, StandardScaler, 
                                    QuantileTransformer, Binarizer)
@@ -15,7 +16,6 @@ import collections
 import inspect
 from builtins import *
 
-from .series import SmartSeries
 
 sklearn_prep_map = {
     'label_encode': LabelEncoder,
@@ -64,7 +64,7 @@ class SmartDataFrame(pandas.DataFrame):
 
     @property
     def _constructor_sliced(self):
-        return SmartSeries
+        return pandas.Series
 
     def _copy(self, deep=True):
         results = self
@@ -349,5 +349,33 @@ class SmartDataFrame(pandas.DataFrame):
     #         raise Exception("Model must be trained")
 
 
+
+class SmartSeries(pandas.Series):
+    def __init__(self, data=None, index=None, columns=None, 
+                 dtype=None, copy=False):
+        """
+        SmartSeries Class wraps important scikit-learn data pre-processing 
+        methods over pandas.Series
+
+        The main idea behind SmartSeries is to allow the user to chain common 
+        data science logic on top of pandas Series.
+
+        Args:
+            args: Arguments passed to a pandas.Series object.
+            kwargs: Keyword arguments passed to a pandas.Seires object.
+        """
+
+        super().__init__(data, index, columns, dtype, copy) 
+
+        # Preprocessing attributes
+        self.registry = collections.defaultdict()
+
+    @property
+    def _constructor(self):
+        return SmartSeries
+
+    @property
+    def _constructor_expanddim(self):
+        return SmartDataFrame
 
 
