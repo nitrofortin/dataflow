@@ -1,5 +1,5 @@
 """
-This file contains the main data structures of dataflow
+This file contains the main data structures of datapho
 """
 
 from sklearn.preprocessing import (LabelEncoder, OneHotEncoder, StandardScaler, 
