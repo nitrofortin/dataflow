@@ -1,2 +1,2 @@
-from .dataframe import *
-from .array import *
+from .frame import SmartDataFrame
+from .array import SmartArray
